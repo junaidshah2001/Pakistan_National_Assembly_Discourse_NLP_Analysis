@@ -9,23 +9,46 @@ End-to-end NLP pipeline analyzing Pakistan National Assembly debates (2008–202
 ![NLP](https://img.shields.io/badge/NLP-Transformers-yellow)
 ![GovTech](https://img.shields.io/badge/Domain-GovTech%20%7C%20Public%20Policy-006400)
 
-## 📌 TL;DR
-This repository contains an end-to-end Machine Learning pipeline that parses, processes, and models 15 years of Pakistani parliamentary discourse. By leveraging transformer-based embeddings (`sentence-transformers`), dimensionality reduction (`UMAP`), and density-based clustering (`HDBSCAN`/`BERTopic`), the system extracts latent legislative priorities and public policy trends from raw National Assembly PDF transcripts. 
+## 📌 Executive Summary
+This repository contains an end-to-end Machine Learning pipeline that parses, processes, and models 15 years of Pakistani parliamentary discourse. By leveraging transformer-based embeddings (`all-MiniLM-L6-v2`), dimensionality reduction (`UMAP`), and density-based clustering (`HDBSCAN`/`BERTopic`), the system extracts latent legislative priorities and public policy trends from raw National Assembly PDF transcripts. 
 
 Built as a decision-support tool to bring quantitative rigor to GovTech and public policy analysis.
 
 ---
 
-## 🏗️ System Architecture & Pipeline
+## 📊 Dataset Statistics & Corpus Overview
 
-The pipeline is entirely modularized to separate data ingestion from intensive computational modeling.
+The raw data consisted of unstructured, occasionally corrupted PDF transcripts from the National Assembly. After robust preprocessing, the final corpus metrics are:
 
-1. **Document Ingestion (`pdfplumber`):** Automated extraction of text from unstructured parliamentary PDFs.
-2. **Text Normalization (`spacy`, `langdetect`):** Multilingual detection, noise reduction, and domain-specific stop-word removal.
-3. **Semantic Embedding (`sentence-transformers`):** Projection of discourse into high-dimensional vector space using pre-trained semantic models.
-4. **Dimensionality Reduction (`UMAP`):** Non-linear manifold learning to optimize vector space for density-based clustering while preserving local/global structures.
-5. **Topic Modeling (`BERTopic` & `HDBSCAN`):** Unsupervised extraction of cohesive policy themes without hard-coding $k$-clusters.
-6. **Projection & Visualization:** 2D semantic maps (t-SNE/UMAP) for stakeholder reporting.
+* **Timeframe:** 3 Parliamentary Terms (2008–2013, 2013–2018, 2018–2023)
+* **Total Pages Parsed:** 116,145 pages
+* **Total Valid Documents:** 1,367 debate transcripts
+* **Date Metadata Coverage:** 92.54% (Recovered via Regex pipelines)
+* **Outlier / Noise Rate:** ~30% (Intentionally isolated via HDBSCAN to prevent forced clustering of procedural noise)
+
+### Top Extracted Macro-Themes (by Document Frequency)
+1. **Corruption & NAB:** 637 sessions
+2. **Terrorism & Security:** 176 sessions
+3. **CPEC & China Relations:** 140 sessions
+4. **Afghanistan & Foreign Policy:** 33 sessions
+
+---
+
+## 🏗️ Methodology & Pipeline Architecture
+
+The pipeline is completely modularized to handle the transition from unstructured government PDFs to structured semantic maps.
+
+### 1. Data Ingestion & Preprocessing
+* **Extraction:** Automated scraping and parsing of PDFs. Implemented error handling to bypass 475 corrupted/unreadable scanned image files.
+* **Metadata Recovery:** Utilized regular expressions to successfully reconstruct missing date and session metadata for over 180 transcripts.
+* **Multilingual Handling:** Assessed Urdu/English text ratios to isolate English segments, navigating heavy parliamentary code-switching.
+
+### 2. Semantic Modeling & NLP
+* **Vectorization:** Encoded cleaned text into a `(1364, 384)` dimensional vector space using the `sentence-transformers/all-MiniLM-L6-v2` model.
+* **Topic Modeling (BERTopic):** * **UMAP:** Reduced 384D embeddings to optimize for density-based clustering while preserving local/global structures.
+  * **HDBSCAN:** Grouped cohesive policy themes without hard-coding $k$-clusters. Evaluated models based on Silhouette scores and intra-topic coherence.
+* **Named Entity Recognition (NER):** Extracted key political figures (e.g., Ayaz Sadiq, Faisal Karim Kundi, Asad Qaiser) to map speaker frequency to specific eras.
+* **Sentiment Analysis:** Deployed HuggingFace transformers to map the emotional valence (Positive/Neutral/Negative) of debates regarding specific topics (e.g., Law & Justice, Infrastructure) across different parliamentary terms.
 
 ---
 
@@ -35,16 +58,16 @@ The pipeline is entirely modularized to separate data ingestion from intensive c
 pak-national-assembly-nlp/
 ├── data/
 │   ├── raw/               # Raw PDF transcripts (Ignored in Git)
-│   └── processed/         # Cleaned JSON/CSV corpora
+│   └── processed/         # Cleaned JSON/CSV corpora (1367 docs)
 ├── notebooks/
-│   └── 01-eda-and-modeling.ipynb  # Primary execution & presentation layer
+│   └── 01-eda-and-modeling.ipynb  # Primary execution & EDA layer
 ├── src/                   # Core Python package
-│   ├── ingestion.py       # PDF parsing logic
-│   ├── preprocessing.py   # Spacy pipelines and regex cleaners
-│   └── modeling.py        # BERTopic and UMAP wrapper classes
-├── models/                # Saved weights and UMAP state (Ignored in Git)
+│   ├── ingestion.py       # PDF parsing and regex metadata extraction
+│   ├── preprocessing.py   # Code-switching handlers and text cleaners
+│   └── modeling.py        # BERTopic, UMAP, and Sentiment wrappers
+├── models/                # Saved transformer weights and UMAP state (Ignored)
 ├── outputs/
-│   └── figures/           # Rendered DPI-optimized visual assets
+│   └── figures/           # Rendered DPI-optimized visual assets (UMAP plots, etc.)
 ├── requirements.txt       # Pinned dependencies
 ├── .gitignore             # Strict exclusion of heavy assets
 └── README.md
